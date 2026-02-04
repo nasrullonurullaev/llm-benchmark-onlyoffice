@@ -64,7 +64,7 @@ jobs:
             --secureCloud \
             --gpuType "${{ inputs.gpu_type }}" \
             --imageName "$IMAGE_NAME" \
-            --args "--model ${{ inputs.model }} --max-model-len ${{ inputs.max_model_len }} --port 8000 --gpu-memory-utilization 0.95")
+            --args "--model ${{ inputs.model }} --max-model-len ${{ inputs.max_model_len }} --port 8000 --gpu-memory-utilization 0.90")
           POD_ID=$(echo "$CREATE_OUTPUT" | awk -F'"' '/pod "/ {print $2}')
           echo "POD_ID=$POD_ID" >> $GITHUB_ENV
 
@@ -115,10 +115,21 @@ jobs:
 
       - name: Generate Benchmark Summary
         run: |
-          echo "## vLLM Benchmark Result" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          grep -A 20 "============ Serving Benchmark Result" benchmark_output.log >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## vLLM Benchmark Result"
+            echo ""
+            echo "### Run config"
+            echo "- **GPU:** ${{ inputs.gpu_type }}"
+            echo "- **Model:** ${{ inputs.model }}"
+            echo "- **Server max_model_len:** ${{ inputs.max_model_len }}"
+            echo "- **Bench input_len:** ${{ inputs.input_len }}"
+            echo "- **Bench output_len:** ${{ inputs.output_len }}"
+            echo ""
+            echo "### Metrics"
+            echo '```'
+            grep -A 200 "============ Serving Benchmark Result" benchmark_output.log || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Benchmark Results
         uses: actions/upload-artifact@v4
